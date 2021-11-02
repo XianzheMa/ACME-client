@@ -7,8 +7,8 @@
 
 * need to set user-agent, accept-language?
 * what if the server does not support that signing alg?
-* pycryptodome or pycryptodomex
-* update replay-nonce
+* what is orders field for creating an account?
+* wildcast is not supported currently
 
 # TO-DO
 

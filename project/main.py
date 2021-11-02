@@ -1,6 +1,8 @@
 # %%
 import requests
+from typing import Dict, List, Tuple, Union
 from project.constant import *
+from datetime import datetime, timedelta
 import project.utils as utils
 import sys
 
@@ -28,6 +30,7 @@ class ACMEclient:
 
         self.refresh_replay_nonce()
 
+
     def request(self, verb, url, headers=None, **kwargs):
         try:
             response = requests.request(verb, url, verify=self.ca_cert_path, headers=headers, **kwargs)
@@ -50,7 +53,45 @@ class ACMEclient:
         response = self.request('HEAD', self.directory[RESOURCES.NEW_NONCE])
         self.replay_nonce = response.headers[HEADERS.REPLAY_NONCE]
 
-    def post_request(self, url, headers=dict(), payload=dict(), usingJWK=True, **kwargs):
+    def create_account(self):
+        response = client.post_with_retry(self.directory[RESOURCES.NEW_ACCOUNT], payload={
+            "termsOfServiceAgreed": True,
+        }, usingJWK=True)
+        self.account_url = response.headers[HEADERS.LOCATION]
+
+    def apply_for_cert(self, domain_lists, not_before: datetime, not_after: datetime):
+        payload = {
+            'identifiers': [{
+                'type': 'dns',
+                'value': domain
+            } for domain in domain_lists],
+            'notBefore': not_before.isoformat(),
+            'notAfter': not_after.isoformat()
+        }
+
+        response = self.post_with_retry(self.directory[RESOURCES.NEW_ORDER], payload=payload)
+        response_body = response.json()
+        return response.headers[HEADERS.LOCATION], response_body['authorizations'], response_body['finalize']
+
+    def get_resource(self, resource_url):
+        response = self.post_with_retry(resource_url)
+        return response.json()
+
+
+    def post_with_retry(self, url, headers=dict(), payload: Union[str, Dict]='', usingJWK=False, **kwargs):
+        response = self.post_request(url, headers, payload, usingJWK, **kwargs)
+
+        if response.status_code == 400:
+            # retry
+            response = self.post_request(url, headers, payload, usingJWK, **kwargs)
+
+        if response.status_code // 100 in [4, 5]:
+            print('Get a response with error status code.')
+            sys.exit(1)
+
+        return response
+
+    def post_request(self, url, headers=dict(), payload: Union[str, Dict]='', usingJWK=False, **kwargs):
         headers[HEADERS.CONTENT_TYPE] = HEADER_VALS.JOSE_JSON_CONTENT_TYPE
         protected_headers = {
             'alg': 'ES256',
@@ -70,7 +111,13 @@ class ACMEclient:
         else:
             protected_headers['kid'] = self.account_url
         encoded_protected_headers = utils.base64url_encode(utils.json_to_bytes(protected_headers))
-        encoded_payload = utils.base64url_encode(utils.json_to_bytes(payload))
+
+        if payload == '':
+            # POST-as-Get request
+            encoded_payload = ''.encode()
+        else:
+            encoded_payload = utils.base64url_encode(utils.json_to_bytes(payload))
+
         content_to_sign = encoded_protected_headers + '.'.encode() + encoded_payload
         signature = utils.ES256_sign(self.private_key, content_to_sign)
         encoded_signature = utils.base64url_encode(signature)
@@ -86,8 +133,6 @@ class ACMEclient:
 
 
 client = ACMEclient(DIRECTORY, CA_CERT_PATH)
-response = client.post_request('https://localhost:14000/sign-me-up', payload={
-    "termsOfServiceAgreed": True,
-})
 
-utils.pretty_print_json(response.json())
+client.create_account()
+order_loc, auths, finalize = client.apply_for_cert(['netsec.ethz.ch', 'syssec.ethz.ch'], datetime.now(), datetime.now() + timedelta(weeks=1))

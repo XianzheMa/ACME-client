@@ -12,6 +12,7 @@ class RESOURCES:
 class HEADERS:
     REPLAY_NONCE = 'Replay-Nonce'
     CONTENT_TYPE = 'Content-Type'
+    LOCATION = 'Location'
 
 
 class HEADER_VALS:
