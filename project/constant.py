@@ -1,5 +1,8 @@
 CA_CERT_PATH = './project/pebble.minica.pem'
 
+class DNS_SERVER:
+    ADDRESS = '0.0.0.0'
+    PORT = 10053
 
 class RESOURCES:
     NEW_ACCOUNT = 'newAccount'

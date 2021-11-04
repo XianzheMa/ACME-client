@@ -6,26 +6,32 @@ from dnslib.dns import RR, A, TXT, DNSRecord, QTYPE
 
 class Resolver:
 
-    def __init__(self, A_answer: str, TXT_answer: str, ttl = 300):
+    def __init__(self, A_answer: str, domain2TXT: dict, ttl = 300):
         self.A_answer = A_answer
-        self.TXT_answer = TXT_answer
+        self.domain2TXT = domain2TXT
         self.ttl = ttl
 
     def resolve(self, request: DNSRecord, handler):
         qname = request.q.qname
         qtype = request.q.qtype
         reply = request.reply()
+
         if qtype == QTYPE.A:
             reply.add_answer(RR(qname, QTYPE.A, ttl=self.ttl,  rdata=A(self.A_answer)))
         elif qtype == QTYPE.TXT:
-            reply.add_answer(RR(qname, QTYPE.TXT, ttl=self.ttl, rdata=TXT(self.TXT_answer)))
+            domain = str(qname)[:-1]
+            if domain in self.domain2TXT:
+                TXT_val = self.domain2TXT[domain]
+            else:
+                TXT_val = 'None'
+            reply.add_answer(RR(qname, QTYPE.TXT, ttl=self.ttl, rdata=TXT(TXT_val)))
 
         return reply
 
 
-def create_dns_server(address: str, port: int, A_answer: str, TXT_answer: str) -> DNSServer:
+def create_dns_server(address: str, port: int, A_answer: str, domain2TXT) -> DNSServer:
     return DNSServer(
-        resolver=Resolver(A_answer, TXT_answer),
+        resolver=Resolver(A_answer, domain2TXT),
         port=port,
         address=address,
         logger=DNSLogger(prefix=False)

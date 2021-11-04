@@ -28,16 +28,27 @@ def base64url_encode(msg: bytes) -> bytes:
 def bytes2raw_string(msg: bytes) -> str:
     return str(msg)[2:-1]
 
+
 def EC256_pub_key2JWK(public_key: ECC) -> Dict:
     x, y = public_key.pointQ.xy
     jwk = {
-        'kty': 'EC',
         'crv': 'P-256',
+        'kty': 'EC',
         'x': bytes2raw_string(base64url_encode(int(x).to_bytes(32, 'big'))),
         'y': bytes2raw_string(base64url_encode(int(y).to_bytes(32, 'big'))),
-        # 'use': 'sig'
     }
     return jwk
+
+
+def SHA256hash(msg: bytes):
+    return SHA256.new(msg).digest()
+
+
+def EC256_pub_key2thumbprint(public_key: ECC) -> bytes:
+    jwk = EC256_pub_key2JWK(public_key)
+    msg = json.dumps(jwk, separators=(',', ':')).encode()
+    thumbprint = SHA256hash(msg)
+    return thumbprint
 
 
 def base64url_decode(msg: bytes) -> bytes:
@@ -45,8 +56,16 @@ def base64url_decode(msg: bytes) -> bytes:
     msg = msg + '='.encode() * equal_nums
     return urlsafe_b64decode(msg)
 
+
+def compute_key_authorization(token: str, public_key: ECC) -> str:
+    thumbprint = EC256_pub_key2thumbprint(public_key)
+    encoded_key = bytes2raw_string(base64url_encode(thumbprint))
+    return token + '.' + encoded_key
+
+
 def json_to_bytes(json_obj) -> bytes:
-    return json.dumps(json_obj, ensure_ascii=False).encode('utf8')
+    return json.dumps(json_obj, ensure_ascii=False, separators=(',', ':')).encode('utf8')
+
 
 def pretty_print_json(json_obj, sort_keys = False):
     print(json.dumps(json_obj, indent=4, sort_keys=sort_keys))

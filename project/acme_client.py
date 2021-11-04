@@ -27,7 +27,6 @@ class ACMEclient:
 
         self.refresh_replay_nonce()
 
-
     def request(self, verb, url, headers=None, **kwargs):
         try:
             response = requests.request(verb, url, verify=self.ca_cert_path, headers=headers, **kwargs)
@@ -40,7 +39,6 @@ class ACMEclient:
             self.replay_nonce = response.headers[HEADERS.REPLAY_NONCE]
 
         return response
-
 
     def get_directory(self):
         response = self.request('GET', self.directory_url)
@@ -56,7 +54,7 @@ class ACMEclient:
         }, usingJWK=True)
         self.account_url = response.headers[HEADERS.LOCATION]
 
-    def apply_for_cert(self, domain_lists, not_before: datetime, not_after: datetime):
+    def create_cert_order(self, domain_lists, not_before, not_after):
         payload = {
             'identifiers': [{
                 'type': 'dns',
@@ -67,13 +65,48 @@ class ACMEclient:
         }
 
         response = self.post_with_retry(self.directory[RESOURCES.NEW_ORDER], payload=payload)
+        return response
+
+    def get_challenge_info(self, auth_url, challenge_type):
+        response_body = self.get_resource(auth_url)
+        challenges = response_body['challenges']
+        token = None
+        challenge_url = None
+        for challenge in challenges:
+            if challenge['type'] == challenge_type:
+                token = challenge['token']
+                challenge_url = challenge['url']
+                break
+
+        if token is None:
+            return None
+
+        key_auth = utils.compute_key_authorization(token, self.public_key)
+        return {
+            'token': token,
+            'key_auth': key_auth,
+            'url': challenge_url
+        }
+
+    def apply_for_cert(self, domain_lists, not_before: datetime, not_after: datetime, challenge_type: str):
+        response = self.create_cert_order(domain_lists, not_before, not_after)
         response_body = response.json()
-        return response.headers[HEADERS.LOCATION], response_body['authorizations'], response_body['finalize']
+        auth_urls = response_body['authorizations']
+        challenge_infos = []
+        for auth_url in auth_urls:
+            challenge_info = self.get_challenge_info(auth_url, challenge_type)
+            if challenge_info is not None:
+                challenge_infos.append(challenge_info)
+
+        return response.headers[HEADERS.LOCATION], challenge_infos
+
+    # def finish_cert_order(self, challenge_url_lists):
+    #     for challenge_url in challenge_url_lists:
+    #         self.post_with_retry(challenge_url, payload={})
 
     def get_resource(self, resource_url):
         response = self.post_with_retry(resource_url)
         return response.json()
-
 
     def post_with_retry(self, url, headers=dict(), payload: Union[str, Dict]='', usingJWK=False, **kwargs):
         response = self.post_request(url, headers, payload, usingJWK, **kwargs)
@@ -84,6 +117,10 @@ class ACMEclient:
 
         if response.status_code // 100 in [4, 5]:
             print('Get a response with error status code.')
+            print('response header is as follows:')
+            utils.pretty_print_json(dict(response.headers))
+            print('response content (if any) is as follows:')
+            print(response.content)
             sys.exit(1)
 
         return response

@@ -10,6 +10,7 @@
 * what if the server does not support that signing alg?
 * what is orders field for creating an account?
 * wildcast is not supported currently
+* serialize json: whitespace?
 
 # TO-DO
 
