@@ -1,12 +1,9 @@
-# %%
 import requests
 from typing import Dict, List, Tuple, Union
 from project.constant import *
 from datetime import datetime, timedelta
 import project.utils as utils
 import sys
-
-DIRECTORY = 'https://localhost:14000/dir'
 
 
 class ACMEclient:
@@ -54,7 +51,7 @@ class ACMEclient:
         self.replay_nonce = response.headers[HEADERS.REPLAY_NONCE]
 
     def create_account(self):
-        response = client.post_with_retry(self.directory[RESOURCES.NEW_ACCOUNT], payload={
+        response = self.post_with_retry(self.directory[RESOURCES.NEW_ACCOUNT], payload={
             "termsOfServiceAgreed": True,
         }, usingJWK=True)
         self.account_url = response.headers[HEADERS.LOCATION]
@@ -100,14 +97,7 @@ class ACMEclient:
         }
 
         if usingJWK:
-            x, y = self.public_key.pointQ.xy
-            protected_headers['jwk'] = {
-                'kty': 'EC',
-                'crv': 'P-256',
-                'x': utils.bytes2raw_string(utils.base64url_encode(int(x).to_bytes(32, 'big'))),
-                'y': utils.bytes2raw_string(utils.base64url_encode(int(y).to_bytes(32, 'big'))),
-                'use': 'sig'
-            }
+            protected_headers['jwk'] = utils.EC256_pub_key2JWK(self.public_key)
         else:
             protected_headers['kid'] = self.account_url
         encoded_protected_headers = utils.base64url_encode(utils.json_to_bytes(protected_headers))
@@ -131,8 +121,3 @@ class ACMEclient:
         response = self.request('POST', url, headers, json=body, **kwargs)
         return response
 
-
-client = ACMEclient(DIRECTORY, CA_CERT_PATH)
-
-client.create_account()
-order_loc, auths, finalize = client.apply_for_cert(['netsec.ethz.ch', 'syssec.ethz.ch'], datetime.now(), datetime.now() + timedelta(weeks=1))

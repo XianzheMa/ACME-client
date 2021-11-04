@@ -2,6 +2,7 @@
 
 * requests
 * pycryptodome
+* dnslib
 
 # issues to be solved
 
