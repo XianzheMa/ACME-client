@@ -46,7 +46,7 @@ def SHA256hash(msg: bytes):
 
 def EC256_pub_key2thumbprint(public_key: ECC) -> bytes:
     jwk = EC256_pub_key2JWK(public_key)
-    msg = json.dumps(jwk, separators=(',', ':')).encode()
+    msg = json.dumps(jwk, separators=(',', ':')).encode('utf8')
     thumbprint = SHA256hash(msg)
     return thumbprint
 

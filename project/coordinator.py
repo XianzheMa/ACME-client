@@ -39,5 +39,5 @@ if challenge_type == 'dns-01':
     dns_server.start_thread()
     print('DNS server has been started.')
 
-# %%
+
 challenge_urls = [info['url'] for info in challenge_infos]
