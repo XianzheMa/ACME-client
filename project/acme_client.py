@@ -68,6 +68,7 @@ class ACMEclient:
 
     def get_challenge_info(self, auth_url, challenge_type):
         response_body = self.get_resource(auth_url)
+        identifier = response_body['identifier']['value']
         challenges = response_body['challenges']
         token = None
         challenge_url = None
@@ -82,6 +83,7 @@ class ACMEclient:
 
         key_auth = utils.compute_key_authorization(token, self.public_key)
         return {
+            'identifier': identifier,
             'token': token,
             'key_auth': key_auth,
             'url': challenge_url

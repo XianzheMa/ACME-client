@@ -95,11 +95,11 @@ def create_csr(private_key, domain_list):
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, CERTIFICATE.ORGANIZATION_NAME),
         x509.NameAttribute(NameOID.COMMON_NAME, CN)
     ]))
-    if len(domain_list) > 1:
-        csr = csr.add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName(other_domain) for other_domain in domain_list
-            ]), critical=False)
+
+    csr = csr.add_extension(
+        x509.SubjectAlternativeName([
+            x509.DNSName(other_domain) for other_domain in domain_list
+        ]), critical=False)
 
     csr = csr.sign(private_key, hashes.SHA256())
 
