@@ -19,10 +19,11 @@ def create_domain2TXT(domain_lists, challenge_infos):
         challenge_info = challenge_infos[pos]
         domain = '_acme-challenge.' + domain
         msg_to_hash = challenge_info['key_auth'].encode()
-        TXT_val = utils.bytes2raw_string(utils.base64url_encode(utils.SHA256hash(msg_to_hash)))
+        TXT_val = utils.base64url_encode_to_string(utils.SHA256hash(msg_to_hash))
         domain2TXT[domain] = TXT_val
 
     return domain2TXT
+
 
 directory = 'https://localhost:14000/dir'
 challenge_type = 'dns-01'
@@ -30,14 +31,12 @@ domain_lists = ['netsec.ethz.ch', 'syssec.ethz.ch']
 A_answer = '1.2.3.4'
 client = ACMEclient(directory, CA_CERT_PATH)
 client.create_account()
-cert_url, challenge_infos = client.apply_for_cert(domain_lists, datetime.now(),
-                                        datetime.now() + timedelta(weeks=1), challenge_type)
+cert_url, challenge_infos = client.apply_for_cert(domain_lists, challenge_type)
 
 if challenge_type == 'dns-01':
     domain2TXT = create_domain2TXT(domain_lists, challenge_infos)
     dns_server = dns.create_dns_server(DNS_SERVER.ADDRESS, DNS_SERVER.PORT, A_answer, domain2TXT)
     dns_server.start_thread()
     print('DNS server has been started.')
-
-
-challenge_urls = [info['url'] for info in challenge_infos]
+    challenge_urls = [info['url'] for info in challenge_infos]
+    server_private_key, certificate = client.finish_cert_order(challenge_urls, cert_url, domain_lists)

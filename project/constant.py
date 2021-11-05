@@ -16,8 +16,16 @@ class HEADERS:
     REPLAY_NONCE = 'Replay-Nonce'
     CONTENT_TYPE = 'Content-Type'
     LOCATION = 'Location'
+    RETRY_AFTER = 'Retry-After'
 
 
 class HEADER_VALS:
     JOSE_JSON_CONTENT_TYPE = 'application/jose+json'
+
+
+class CERTIFICATE:
+    ORGANIZATION_NAME = 'ETH Zurich'
+    LOCALITY_NAME = 'Zurich'
+    STATE_NAME = 'Zurich'
+    COUNTRY_NAME = 'CH'
 

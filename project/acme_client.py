@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple, Union
 from project.constant import *
 from datetime import datetime, timedelta
 import project.utils as utils
+import time
 import sys
 
 
@@ -54,14 +55,12 @@ class ACMEclient:
         }, usingJWK=True)
         self.account_url = response.headers[HEADERS.LOCATION]
 
-    def create_cert_order(self, domain_lists, not_before, not_after):
+    def create_cert_order(self, domain_lists):
         payload = {
             'identifiers': [{
                 'type': 'dns',
                 'value': domain
             } for domain in domain_lists],
-            'notBefore': not_before.isoformat(),
-            'notAfter': not_after.isoformat()
         }
 
         response = self.post_with_retry(self.directory[RESOURCES.NEW_ORDER], payload=payload)
@@ -88,8 +87,8 @@ class ACMEclient:
             'url': challenge_url
         }
 
-    def apply_for_cert(self, domain_lists, not_before: datetime, not_after: datetime, challenge_type: str):
-        response = self.create_cert_order(domain_lists, not_before, not_after)
+    def apply_for_cert(self, domain_lists, challenge_type: str):
+        response = self.create_cert_order(domain_lists)
         response_body = response.json()
         auth_urls = response_body['authorizations']
         challenge_infos = []
@@ -100,9 +99,43 @@ class ACMEclient:
 
         return response.headers[HEADERS.LOCATION], challenge_infos
 
-    # def finish_cert_order(self, challenge_url_lists):
-    #     for challenge_url in challenge_url_lists:
-    #         self.post_with_retry(challenge_url, payload={})
+    def finish_cert_order(self, challenge_url_lists, cert_url, domain_list, time_to_sleep = 5):
+        for challenge_url in challenge_url_lists:
+            self.post_with_retry(challenge_url, payload={})
+
+        while True:
+            response = self.post_with_retry(cert_url)
+
+            status = response.json()['status']
+            print(f'examine order status {status} to post csr...')
+            if status in ['ready', 'invalid']:
+                break
+            time.sleep(time_to_sleep)
+
+        if status != 'ready':
+            return None, None
+
+        # get finalize url
+        finalize_url = self.get_resource(cert_url)['finalize']
+        server_private_key = utils.generate_P256_key()
+        encoded_csr = utils.create_csr(server_private_key, domain_list)
+        response = self.post_with_retry(finalize_url, payload={'csr': encoded_csr})
+        if response.status_code != 200:
+            return None, None
+
+        response_body = response.json()
+        status = response_body['status']
+        while status != 'valid':
+            if status != 'processing':
+                return None, None
+            print(f'examine status {status} for downloading certificate...')
+            response_body = self.get_resource(cert_url)
+            status = response_body['status']
+            time.sleep(time_to_sleep)
+
+        certificate_url = response_body['certificate']
+        response = self.post_with_retry(certificate_url)
+        return server_private_key, response.content
 
     def get_resource(self, resource_url):
         response = self.post_with_retry(resource_url)

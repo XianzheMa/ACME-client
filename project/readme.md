@@ -3,6 +3,8 @@
 * requests
 * pycryptodome
 * dnslib
+* pyopenssl
+* cryptography
 
 # issues to be solved
 
