@@ -1,4 +1,6 @@
 CA_CERT_PATH = './project/pebble.minica.pem'
+HTTPS_PRIVATE_KEY_PATH = './project/https_privkey.pem'
+HTTPS_CERT_PATH = './project/https_cert.pem'
 
 class DNS_SERVER:
     ADDRESS = '0.0.0.0'

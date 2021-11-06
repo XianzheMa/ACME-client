@@ -29,7 +29,7 @@ class Resolver:
         return reply
 
 
-def create_dns_server(address: str, port: int, A_answer: str, domain2TXT) -> DNSServer:
+def create_dns_server(address: str, port: int, A_answer: str, domain2TXT = dict()) -> DNSServer:
     return DNSServer(
         resolver=Resolver(A_answer, domain2TXT),
         port=port,

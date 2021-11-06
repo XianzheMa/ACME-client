@@ -5,6 +5,7 @@
 * dnslib
 * pyopenssl
 * cryptography
+* flask
 
 # issues to be solved
 

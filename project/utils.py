@@ -86,6 +86,20 @@ def generate_P256_key():
     return ec.generate_private_key(ec.SECP256R1())
 
 
+def persist_bytes(bytes, filepath: str):
+    with open(filepath, 'wb') as f:
+        f.write(bytes)
+
+
+def PEM_persist_private_key(private_key: ec.EllipticCurvePrivateKey, filepath):
+    serialized_private = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+    persist_bytes(serialized_private, filepath)
+
+
 def create_csr(private_key, domain_list):
     CN = domain_list[0]
     csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([

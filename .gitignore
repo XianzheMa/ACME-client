@@ -1,3 +1,6 @@
 .venv*
 .idea*
 .DS_Store
+project/https_cert.pem
+project/https_privkey.pem
+__pycache__
