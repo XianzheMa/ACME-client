@@ -3,4 +3,4 @@ DIRECTORY=$(dirname "$0")
 echo "Changing to ${DIRECTORY}"
 cd  "$DIRECTORY" || exit 1
 cd ..
-python -m project.coordinator $@
+python3 -m project.coordinator $@
