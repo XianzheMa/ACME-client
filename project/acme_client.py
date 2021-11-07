@@ -109,7 +109,6 @@ class ACMEclient:
             response = self.post_with_retry(cert_url)
 
             status = response.json()['status']
-            print(f'examine order status {status} to post csr...')
             if status in ['ready', 'invalid']:
                 break
             time.sleep(time_to_sleep)
@@ -130,7 +129,6 @@ class ACMEclient:
         while status != 'valid':
             if status != 'processing':
                 return None, None
-            print(f'examine status {status} for downloading certificate...')
             response_body = self.get_resource(cert_url)
             status = response_body['status']
             time.sleep(time_to_sleep)
@@ -138,6 +136,14 @@ class ACMEclient:
         certificate_url = response_body['certificate']
         response = self.post_with_retry(certificate_url)
         return server_private_key, response.content
+
+    def revoke_cert(self, certificate_in_PEM: bytes):
+        encoded_certificate = utils.base64url_encode_to_string(utils.certificate_from_PEM_to_DER(certificate_in_PEM))
+        payload = {
+            'certificate': encoded_certificate
+        }
+        response = self.post_with_retry(self.directory[RESOURCES.REVOKE_CERT], payload=payload)
+        return response
 
     def get_resource(self, resource_url):
         response = self.post_with_retry(resource_url)

@@ -100,6 +100,11 @@ def PEM_persist_private_key(private_key: ec.EllipticCurvePrivateKey, filepath):
     persist_bytes(serialized_private, filepath)
 
 
+def certificate_from_PEM_to_DER(encoded_certificate: bytes):
+    certificate = x509.load_pem_x509_certificate(encoded_certificate)
+    return certificate.public_bytes(serialization.Encoding.DER)
+
+
 def create_csr(private_key, domain_list):
     CN = domain_list[0]
     csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([

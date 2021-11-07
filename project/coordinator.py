@@ -55,7 +55,6 @@ def main(directory, challenge_type, domain_lists, A_answer, revoke):
     os.system(f'gunicorn --daemon --bind {A_answer}:{SERVER.HTTP_SERVER_PORT} project.http_server:app')
 
     time.sleep(TIME_BEFORE_SBUMIT_CHALLENGE)
-    print('DNS server and HTTP server have both been set up.')
     challenge_urls = [info['url'] for info in challenge_infos]
     server_private_key, certificate = client.finish_cert_order(challenge_urls, cert_url, domain_lists)
 
@@ -64,6 +63,9 @@ def main(directory, challenge_type, domain_lists, A_answer, revoke):
         os.system(f'kill -9 `lsof -t -i:{SERVER.HTTP_SERVER_PORT}`')
         sys.exit(1)
 
+    if revoke:
+        client.revoke_cert(certificate)
+
     # persist server_private_key and certificate to disk
     utils.persist_bytes(certificate, HTTPS_CERT_PATH)
     utils.PEM_persist_private_key(server_private_key, HTTPS_PRIVATE_KEY_PATH)
@@ -71,11 +73,9 @@ def main(directory, challenge_type, domain_lists, A_answer, revoke):
     # kill the previous process, if any
     os.system(f'kill -9 `lsof -t -i:{SERVER.SHUTDOWN_SERVER_PORT}`')
     os.system(f'gunicorn --daemon --bind {A_answer}:{SERVER.SHUTDOWN_SERVER_PORT} project.shutdown_server:app')
-    print('SHUTDOWN server has been set up.')
 
     # kill the previous process, if any
     os.system(f'kill -9 `lsof -t -i:{SERVER.HTTPS_SERVER_PORT}`')
-    print('HTTPS server has been set up.')
     os.system(f'python -m project.https_server {A_answer}')
     dns_server.stop()
 
