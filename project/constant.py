@@ -2,9 +2,19 @@ CA_CERT_PATH = './project/pebble.minica.pem'
 HTTPS_PRIVATE_KEY_PATH = './project/https_privkey.pem'
 HTTPS_CERT_PATH = './project/https_cert.pem'
 
-class DNS_SERVER:
-    ADDRESS = '0.0.0.0'
-    PORT = 10053
+HTTPS_SERVER_PATH = './project/https_server.py'
+HTTP_SERVER_PATH = './project/http_server.py'
+SHUTDOWN_SERVER_PATH = './project/shutdown_server.py'
+
+TOKEN2KEYAUTH_PATH = './project/token2keyauth.txt'
+
+TIME_BEFORE_SBUMIT_CHALLENGE = 5
+class SERVER:
+    DNS_ADDRESS = '0.0.0.0'
+    DNS_PORT = 10053
+    HTTPS_SERVER_PORT = 5001
+    HTTP_SERVER_PORT = 5002
+    SHUTDOWN_SERVE_PORT = 5003
 
 class RESOURCES:
     NEW_ACCOUNT = 'newAccount'

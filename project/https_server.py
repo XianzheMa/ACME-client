@@ -1,6 +1,7 @@
 # %%
+import sys
 from flask import Flask
-from project.constant import HTTPS_PRIVATE_KEY_PATH, HTTPS_CERT_PATH
+from project.constant import *
 import ssl
 
 app = Flask(__name__)
@@ -12,6 +13,9 @@ context.load_cert_chain(HTTPS_CERT_PATH, HTTPS_PRIVATE_KEY_PATH)
 def index():
     return 'hello world!'
 
+@app.route('/shutdown')
+def shutdown():
+    sys.exit(1)
 
 if __name__ == '__main__':
-    app.run(ssl_context=context, port=5001)
+    app.run(ssl_context=context, port=SERVER.HTTPS_SERVER_PORT)

@@ -1,22 +1,29 @@
 # %%
-from flask import Flask
 import sys
+from flask import Flask, abort
+from project.constant import TOKEN2KEYAUTH_PATH
+import json
 
 app = Flask(__name__)
 
-token = None
-key_auth = None
+token2key_auth = None
 
 
-@app.route('/.well-known/acme-challenge/<token_input>')
-def acme_challenge(token_input):
-    if token_input == token:
-        return key_auth
+
+@app.route('/.well-known/acme-challenge/<token>')
+def acme_challenge(token):
+    global token2key_auth
+    if token2key_auth is None:
+        # de-serialize the dict
+        with open(TOKEN2KEYAUTH_PATH) as f:
+            token2key_auth = json.load(f)
+
+    if token in token2key_auth:
+        return token2key_auth[token]
     else:
-        return 'hello world!'
+        return abort(404)
 
 
-if __name__ == '__main__':
-    token = sys.argv[1]
-    key_auth = sys.argv[2]
-    app.run(port=5002)
+@app.route('/shutdown')
+def shutdown():
+    sys.exit(1)

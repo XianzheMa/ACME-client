@@ -6,6 +6,7 @@
 * pyopenssl
 * cryptography
 * flask
+* gunicorn
 
 # issues to be solved
 
