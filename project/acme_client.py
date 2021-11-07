@@ -1,7 +1,6 @@
 import requests
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Union
 from project.constant import *
-from datetime import datetime, timedelta
 import project.utils as utils
 import time
 import sys
@@ -68,6 +67,12 @@ class ACMEclient:
 
     def get_challenge_info(self, auth_url, challenge_type):
         response_body = self.get_resource(auth_url)
+        wildcard = False
+        if 'wildcard' in response_body and response_body['wildcard']:
+            # switch to dns
+            wildcard = True
+            challenge_type = 'dns-01'
+
         identifier = response_body['identifier']['value']
         challenges = response_body['challenges']
         token = None
@@ -86,7 +91,8 @@ class ACMEclient:
             'identifier': identifier,
             'token': token,
             'key_auth': key_auth,
-            'url': challenge_url
+            'url': challenge_url,
+            'wildcard': wildcard
         }
 
     def apply_for_cert(self, domain_lists, challenge_type: str):
@@ -101,7 +107,7 @@ class ACMEclient:
 
         return response.headers[HEADERS.LOCATION], challenge_infos
 
-    def finish_cert_order(self, challenge_url_lists, cert_url, domain_list, time_to_sleep = 2):
+    def finish_cert_order(self, challenge_url_lists, cert_url, domain_list, time_to_sleep = 3):
         for challenge_url in challenge_url_lists:
             self.post_with_retry(challenge_url, payload={})
 

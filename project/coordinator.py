@@ -10,16 +10,18 @@ import os
 import argparse
 
 
-def create_domain2TXT(challenge_infos):
+def create_domain2TXT(challenge_infos, only_include_wildcard = False):
     domain2TXT = {}
     for info in challenge_infos:
+        if only_include_wildcard:
+            if not info['wildcard']:
+                continue
         domain = info['identifier']
         key_auth = info['key_auth']
         challenge_domain = '_acme-challenge.' + domain
         msg_to_hash = key_auth.encode()
         TXT_val = utils.base64url_encode_to_string(utils.SHA256hash(msg_to_hash))
         domain2TXT[challenge_domain] = TXT_val
-
     return domain2TXT
 
 
@@ -41,7 +43,7 @@ def main(directory, challenge_type, domain_lists, A_answer, revoke):
         token2keyauth = dict()
     else:
         # http-01 challenge
-        domain2TXT = dict()
+        domain2TXT = create_domain2TXT(challenge_infos, only_include_wildcard=True)
         token2keyauth = create_token2keyauth(challenge_infos)
 
     dns_server = dns.create_dns_server(SERVER.DNS_ADDRESS, SERVER.DNS_PORT, A_answer, domain2TXT)
