@@ -21,7 +21,10 @@ def create_domain2TXT(challenge_infos, only_include_wildcard = False):
         challenge_domain = '_acme-challenge.' + domain
         msg_to_hash = key_auth.encode()
         TXT_val = utils.base64url_encode_to_string(utils.SHA256hash(msg_to_hash))
-        domain2TXT[challenge_domain] = TXT_val
+        if challenge_domain in domain2TXT:
+            domain2TXT[challenge_domain].append(TXT_val)
+        else:
+            domain2TXT[challenge_domain] = [TXT_val]
     return domain2TXT
 
 
@@ -37,7 +40,6 @@ def main(directory, challenge_type, domain_lists, A_answer, revoke):
     client = ACMEclient(directory, CA_CERT_PATH)
     client.create_account()
     cert_url, challenge_infos = client.apply_for_cert(domain_lists, challenge_type)
-
     if challenge_type == 'dns-01':
         domain2TXT = create_domain2TXT(challenge_infos)
         token2keyauth = dict()

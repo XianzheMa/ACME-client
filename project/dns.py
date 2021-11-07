@@ -21,10 +21,10 @@ class Resolver:
         elif qtype == QTYPE.TXT:
             domain = str(qname)[:-1]
             if domain in self.domain2TXT:
-                TXT_val = self.domain2TXT[domain]
+                for TXT_val in self.domain2TXT[domain]:
+                    reply.add_answer(RR(qname, QTYPE.TXT, ttl=self.ttl, rdata=TXT(TXT_val)))
             else:
-                TXT_val = 'None'
-            reply.add_answer(RR(qname, QTYPE.TXT, ttl=self.ttl, rdata=TXT(TXT_val)))
+                reply.add_answer(RR(qname, QTYPE.TXT, ttl=self.ttl, rdata=TXT('None')))
 
         return reply
 
