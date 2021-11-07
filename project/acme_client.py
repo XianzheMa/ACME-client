@@ -101,7 +101,7 @@ class ACMEclient:
 
         return response.headers[HEADERS.LOCATION], challenge_infos
 
-    def finish_cert_order(self, challenge_url_lists, cert_url, domain_list, time_to_sleep = 5):
+    def finish_cert_order(self, challenge_url_lists, cert_url, domain_list, time_to_sleep = 2):
         for challenge_url in challenge_url_lists:
             self.post_with_retry(challenge_url, payload={})
 

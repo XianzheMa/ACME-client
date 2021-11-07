@@ -1,5 +1,5 @@
 # %%
-import sys
+import sys, errno
 from flask import Flask, abort
 from project.constant import TOKEN2KEYAUTH_PATH
 import json
@@ -26,4 +26,4 @@ def acme_challenge(token):
 
 @app.route('/shutdown')
 def shutdown():
-    sys.exit(1)
+    sys.exit(errno.EINTR)

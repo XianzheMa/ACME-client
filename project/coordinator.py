@@ -9,7 +9,6 @@ import json
 import os
 
 
-
 def create_domain2TXT(challenge_infos):
     domain2TXT = {}
     for info in challenge_infos:
@@ -22,12 +21,14 @@ def create_domain2TXT(challenge_infos):
 
     return domain2TXT
 
+
 def create_token2keyauth(challenge_infos):
     token2keyauth = dict()
     for info in challenge_infos:
         token2keyauth[info['token']] = info['key_auth']
 
     return token2keyauth
+
 
 directory = 'https://localhost:14000/dir'
 challenge_type = 'http-01'
@@ -55,15 +56,17 @@ with open(TOKEN2KEYAUTH_PATH, 'w') as f:
 
 # kill the previous process, if any
 os.system(f'kill -9 `lsof -t -i:{SERVER.HTTP_SERVER_PORT}`')
-os.system(f'gunicorn --daemon --bind {A_answer}:{SERVER.HTTP_SERVER_PORT} --workers=4 project.http_server:app')
+os.system(f'gunicorn --daemon --bind {A_answer}:{SERVER.HTTP_SERVER_PORT} project.http_server:app')
 
 time.sleep(TIME_BEFORE_SBUMIT_CHALLENGE)
-print('DNS server and HTTP server have both been started.')
+print('DNS server and HTTP server have both been set up.')
 challenge_urls = [info['url'] for info in challenge_infos]
 
 server_private_key, certificate = client.finish_cert_order(challenge_urls, cert_url, domain_lists)
 
 if server_private_key is None:
+    dns_server.stop()
+    os.system(f'kill -9 `lsof -t -i:{SERVER.HTTP_SERVER_PORT}`')
     sys.exit(1)
 
 # persist server_private_key and certificate to disk
@@ -72,7 +75,12 @@ utils.PEM_persist_private_key(server_private_key, HTTPS_PRIVATE_KEY_PATH)
 
 
 # kill the previous process, if any
+os.system(f'kill -9 `lsof -t -i:{SERVER.SHUTDOWN_SERVER_PORT}`')
+os.system(f'gunicorn --daemon --bind {A_answer}:{SERVER.SHUTDOWN_SERVER_PORT} project.shutdown_server:app')
+print('HTTPS server has been set up.')
+
+# kill the previous process, if any
 os.system(f'kill -9 `lsof -t -i:{SERVER.HTTPS_SERVER_PORT}`')
-os.system(f'gunicorn --daemon --bind localhost:{SERVER.HTTPS_SERVER_PORT} --workers=4 project.https_server:app')
-# %%
+os.system(f'python -m project.https_server {A_answer}')
+print('shutdown server has been set up.')
 dns_server.stop()
